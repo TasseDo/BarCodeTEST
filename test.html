@@ -2,59 +2,77 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scanner de Code-barres</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <title>Scanner Code-barres / QR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Html5Qrcode Library -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
   <style>
     body {
       font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
       text-align: center;
-      padding: 10px;
     }
-    #scanner {
+
+    #reader {
       width: 100%;
-      height: auto;
-    }
-    #result {
-      font-size: 1.5em;
+      max-width: 400px;
+      margin: auto;
       margin-top: 20px;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 1.5em;
       color: green;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
     }
   </style>
 </head>
 <body>
 
-  <h1>Scanner un Code-barres</h1>
-  <div id="scanner"></div>
+  <h1>Scanner un Code-barres ou QR</h1>
+
+  <div id="reader"></div>
   <div id="result">Aucun code détecté</div>
+  <button onclick="startScanner()">Scanner à nouveau</button>
 
   <script>
-    Quagga.init({
-      inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: document.querySelector('#scanner'),
-        constraints: {
-          facingMode: "environment" // caméra arrière
-        },
-      },
-      decoder: {
-        readers: ["code_128_reader", "ean_reader", "ean_8_reader"]
-      }
-    }, function (err) {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      Quagga.start();
-    });
+    let html5QrcodeScanner;
+    const resultDiv = document.getElementById('result');
 
-    Quagga.onDetected(function (result) {
-      const code = result.codeResult.code;
-      document.getElementById('result').textContent = "Code détecté : " + code;
-      // Optionnel : Arrêter après détection
-      Quagga.stop();
-    });
+    function onScanSuccess(decodedText, decodedResult) {
+      resultDiv.innerText = "Code détecté : " + decodedText;
+      html5QrcodeScanner.clear(); // Stop scanning after success
+    }
+
+    function startScanner() {
+      resultDiv.innerText = "En attente de scan...";
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      html5QrcodeScanner.start(
+        { facingMode: "environment" }, // Use back camera
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        (err) => {
+          console.warn("Erreur de scan :", err);
+        }
+      ).catch(err => {
+        resultDiv.innerText = "Erreur caméra : " + err;
+      });
+    }
+
+    // Start scanning on page load
+    window.onload = startScanner;
   </script>
 
 </body>
